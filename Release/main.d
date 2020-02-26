@@ -1,5 +1,3 @@
-main.d main.o: ../main.c ../MCAL/UART.h ../uart.h
+main.d main.o: ../main.c ../MCAL/UART.h
 
 ../MCAL/UART.h:
-
-../uart.h:

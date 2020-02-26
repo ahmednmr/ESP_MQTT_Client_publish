@@ -11,10 +11,21 @@
 #include <string.h>
 #include "MCAL/UART.h"
 #include <avr/interrupt.h>
-#include "uart.h"
 
 #include "stdlib.h"
 #include "string.h"
+
+
+#define Client_ID      "11232siy1weu1e21"        //16 digits
+#define User_Name      "nmr"                     //3 digits
+#define Password       "GXQD8VN78RAISAUH"        //MQTT Key
+
+#define Channel_ID     "996736"                  //Your Channel ID
+#define Write_Key      "RNNN90XKATASUZZG"        //Api Write Key
+#define Data           "7"       				 //Data
+
+#define Publish       1
+#define Subscribe     0
 
 
 #define TRUE 1
@@ -24,9 +35,10 @@ char Rec_Data[DEFAULT_BUFFER_SIZE];
 char Counter=0;
 
 
+char Check_Respond(char * Expected_Respond);
+char Check_Word_in_Respond(char * Word);
+void Clear_REC_Buffer(void);
 
-
-char Check_Respond(char * Expected_Respond,char Respond_Length);
 
 ISR (USART_RXC_vect)
 {
@@ -47,72 +59,137 @@ int main()
 
 	DDRD=(1<<PD4);
 	init_UART();
-	uart_init();
 	sei();
 
-
-	UART_SEND_string("ATE0\r\n");
 	_delay_ms(1000);
+	Clear_REC_Buffer();
+	UART_SEND_string("ATE0\r\n");
+	while(!((Check_Respond("\r\nOK\r\n"))||(Check_Respond("\r\nATE0\r\n\r\nOK\r\n"))))
+	{
+		_delay_ms(1);
+	}
 
 
 	UART_SEND_string("AT+CWMODE=3\r\n");
-	_delay_ms(3000);
-
+	while(!Check_Respond("\r\nOK\r\n"))
+	{
+		_delay_ms(1);
+	}
 
 
 	UART_SEND_string("AT+CIPMUX=0\r\n");
-	_delay_ms(3000);
+	while(!Check_Respond("\r\nOK\r\n"))
+	{
+		_delay_ms(1);
+	}
 
 
 	UART_SEND_string("AT+CIPMODE=0\r\n");
-	_delay_ms(3000);
-
+	while(!Check_Respond("\r\nOK\r\n"))
+	{
+		_delay_ms(1);
+	}
 
 	//
 	//		UART_SEND_string("AT+CWJAP_DEF=\"Honor\",\"dodododo\"\r\n");
 	UART_SEND_string("AT+CWJAP_DEF=\"Embeddedfab\",\"Embeddedfab135\"\r\n");
 
-	_delay_ms(3000);
-	_delay_ms(3000);
-	_delay_ms(3000);
-	_delay_ms(3000);
-	_delay_ms(3000);
+	while(!Check_Respond("WIFI DISCONNECT\r\nWIFI CONNECTED\r\nWIFI GOT IP\r\n\r\nOK\r\n"))
+	{
+		_delay_ms(1);
+	}
 
 
 	UART_SEND_string("AT+CIPSTART=\"TCP\",\"mqtt.thingspeak.com\",1883\r\n");
-	_delay_ms(3000);
+	while(!Check_Respond("CONNECT\r\n\r\nOK\r\n"))
+	{
+		_delay_ms(1);
+	}
 
 
 
-
-	UART_SEND_string("AT+CIPSEND=30\r\n");
-	_delay_ms(1000);
+	UART_SEND_string("AT+CIPSEND=53\r\n");
+	while(!Check_Respond("\r\nOK\r\n> "))
+	{
+		_delay_ms(1);
+	}
 
 	UART_SendChar(0x10);
-	UART_SendChar(0x1C);
+	UART_SendChar(0x33);
 	UART_SendChar(0x00);
 	UART_SendChar(0x04);
 	UART_SEND_string("MQTT");
 	UART_SendChar(0x04);
-	UART_SendChar(0x02);
+	UART_SendChar(0xC2);
 	UART_SendChar(0x00);
 	UART_SendChar(0x3C);
 	UART_SendChar(0x00);
 	UART_SendChar(0x10);
-	UART_SEND_string("1GCN259YMUDE2JWR");
+	UART_SEND_string(Client_ID);
+	UART_SendChar(0x00);
+	UART_SendChar(0x03);
+	UART_SEND_string(User_Name);
+	UART_SendChar(0x00);
+	UART_SendChar(0x10);
+	UART_SEND_string(Password);
 
+	while(!Check_Word_in_Respond("+IPD"))
+	{
+		_delay_ms(1);
+	}
 	_delay_ms(1000);
+	Clear_REC_Buffer();
+
+
+
+#if Publish
 
 	UART_SEND_string("AT+CIPSEND=59\r\n");
-	_delay_ms(1000);
+	while(!Check_Respond("\r\nOK\r\n> "))
+	{
+		_delay_ms(1);
+	}
+
+
 
 	UART_SendChar(0x30);
 	UART_SendChar(0x39);
 	UART_SendChar(0x00);
 	UART_SendChar(0x36);
 
-	UART_SEND_string("channels/931047/publish/fields/field3/SD5OBD49N5H4O8RY");
-	UART_SEND_string("8");
+	UART_SEND_string("channels/");
+	UART_SEND_string(Channel_ID);
+	UART_SEND_string("/publish/fields/field2/");
+	UART_SEND_string(Write_Key);
+	UART_SEND_string(Data);
+
+#endif
+
+#if Subscribe
+
+	UART_SEND_string("AT+CIPSEND=46\r\n");
+	while(!Check_Respond("\r\nOK\r\n> "))
+	{
+		_delay_ms(1);
+	}
+
+
+	UART_SendChar(0x82);
+	UART_SendChar(0x2c);
+	UART_SendChar(0x00);
+	UART_SendChar(0x0A);
+	UART_SendChar(0x00);
+	UART_SendChar(0x27);
+	UART_SEND_string("channels/");
+	UART_SEND_string(Channel_ID);
+	UART_SEND_string("/subscribe/fields/field3");
+	UART_SendChar(0x00);
+
+
+
+
+
+#endif
 
 
 
@@ -120,29 +197,41 @@ int main()
 }
 
 
-
-char Check_Respond(char * Expected_Respond,char Respond_Length)
+char Check_Respond(char * Expected_Respond)
 {
+	char Respond_Length=0;
 
-	Counter=0;
+	Respond_Length=strlen(Expected_Respond);
 
-	uart_TX_string("Respond\r\n");    //For Debug only
-	uart_TX_string(Rec_Data);         //For Debug only
-	uart_TX_string("END\r\n");        //For Debug only
-
-	if(!strncmp(Rec_Data,Expected_Respond, Respond_Length))
+	if(strncmp(Rec_Data,Expected_Respond, Respond_Length)==0)
 	{
-		uart_TX_string("Respond matched\r\n");   //For Debug only
-		memset(Rec_Data,0,Respond_Length);
+		Clear_REC_Buffer();
 		return TRUE;
 	}
-
-	memset(Rec_Data,0,Respond_Length);
 	return FALSE;
 
 
 }
 
+
+char Check_Word_in_Respond(char * Word)
+{
+
+
+	if(strstr(Rec_Data,Word) != 0)
+	{
+		Clear_REC_Buffer();
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+void Clear_REC_Buffer(void)
+{
+	Counter=0;
+	memset(Rec_Data,0,DEFAULT_BUFFER_SIZE);
+}
 
 
 
