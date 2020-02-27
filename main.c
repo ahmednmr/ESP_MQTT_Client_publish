@@ -61,10 +61,10 @@ int main()
 	init_UART();
 	sei();
 
-	_delay_ms(1000);
+	_delay_ms(2000);
 	Clear_REC_Buffer();
 	UART_SEND_string("ATE0\r\n");
-	while(!((Check_Respond("\r\nOK\r\n"))||(Check_Respond("\r\nATE0\r\n\r\nOK\r\n"))))
+	while(!((Check_Respond("\r\nOK\r\n"))||(Check_Respond("ATE0\r\r\n\r\nOK\r\n"))))
 	{
 		_delay_ms(1);
 	}
@@ -94,7 +94,7 @@ int main()
 	//		UART_SEND_string("AT+CWJAP_DEF=\"Honor\",\"dodododo\"\r\n");
 	UART_SEND_string("AT+CWJAP_DEF=\"Embeddedfab\",\"Embeddedfab135\"\r\n");
 
-	while(!Check_Respond("WIFI DISCONNECT\r\nWIFI CONNECTED\r\nWIFI GOT IP\r\n\r\nOK\r\n"))
+	while(!((Check_Respond("WIFI DISCONNECT\r\nWIFI CONNECTED\r\nWIFI GOT IP\r\n\r\nOK\r\n"))||(Check_Respond("WIFI CONNECTED\r\nWIFI GOT IP\r\n\r\nOK\r\n"))))
 	{
 		_delay_ms(1);
 	}
@@ -159,7 +159,7 @@ int main()
 
 	UART_SEND_string("channels/");
 	UART_SEND_string(Channel_ID);
-	UART_SEND_string("/publish/fields/field2/");
+	UART_SEND_string("/publish/fields/field1/");
 	UART_SEND_string(Write_Key);
 	UART_SEND_string(Data);
 
@@ -182,7 +182,7 @@ int main()
 	UART_SendChar(0x27);
 	UART_SEND_string("channels/");
 	UART_SEND_string(Channel_ID);
-	UART_SEND_string("/subscribe/fields/field3");
+	UART_SEND_string("/subscribe/fields/field1");
 	UART_SendChar(0x00);
 
 
